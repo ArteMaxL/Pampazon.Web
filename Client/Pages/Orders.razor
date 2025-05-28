@@ -1,5 +1,6 @@
 @page "/orders"
 @using Pampazon.Web.Client.Models
+@using Pampazon.Web.Client.Components
 @inject HttpClient Http
 
 <h3>Orders</h3>
@@ -11,59 +12,69 @@
     </div>
 }
 
-@if (orders == null && string.IsNullOrEmpty(loadErrorMessage))
+@if (showOrderForm)
 {
-    <p><em>Loading...</em></p>
+    <OrderForm OrderModel="currentOrder" IsEdit="isEditMode" OnSubmit="HandleOrderSubmit" OnCancel="CancelOrderForm" />
 }
-else if (orders != null && !orders.Any())
+else
 {
-    <p><em>No orders found. You can create a new order.</em></p>
-    <button class="btn btn-success mt-3" @onclick="ShowCreateOrderForm">Create New Order</button>
-}
-else if (orders != null)
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Order #</th>
-                <th>Date</th>
-                <th>Client CUIT</th>
-                <th>Recipient</th>
-                <th>Status</th>
-                <th>Items</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var order in orders)
-            {
+    @if (orders == null && string.IsNullOrEmpty(loadErrorMessage))
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (orders != null && !orders.Any())
+    {
+        <p><em>No orders found. You can create a new order.</em></p>
+        <button class="btn btn-success mt-3" @onclick="ShowCreateOrderForm">Create New Order</button>
+    }
+    else if (orders != null)
+    {
+        <table class="table">
+            <thead>
                 <tr>
-                    <td>@order.OrderNumber</td>
-                    <td>@order.Date.ToShortDateString()</td>
-                    <td>@(order.Client != null ? order.Client.BusinessName : order.ClientCUIT)</td>
-                    <td>@order.RecipientName (@order.RecipientAddress)</td>
-                    <td>@order.Status</td>
-                    <td>@order.Items?.Count</td>
-                    <td>
-                        <button class="btn btn-sm btn-info" @onclick="() => ViewOrder(order)">View</button>
-                        @if (order.Status == "Pending")
-                        {
-                            <button class="btn btn-sm btn-warning" @onclick="() => PrepareOrder(order)">Prepare</button>
-                        }
-                    </td>
+                    <th>Order #</th>
+                    <th>Date</th>
+                    <th>Client ID</th>
+                    <th>Recipient</th>
+                    <th>Status (Code)</th>
+                    <th>Items</th>
+                    <th>Actions</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-    <button class="btn btn-success" @onclick="ShowCreateOrderForm">Create New Order</button>
+            </thead>
+            <tbody>
+                @foreach (var order in orders)
+                {
+                    <tr>
+                        <td>@order.OrderNumber</td>
+                        <td>@order.Date.ToShortDateString()</td>
+                        <td>@(order.Client != null ? order.Client.BusinessName : order.ClientId)</td>
+                        <td>@order.RecipientName (@order.RecipientAddress)</td>
+                        <td>@order.Status</td>
+                        <td>@order.Items?.Count</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" @onclick="() => ViewOrder(order)">View</button>
+                            @if (order.Status == "Pending")
+                            {
+                                <button class="btn btn-sm btn-warning" @onclick="() => PrepareOrder(order)">Prepare</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <button class="btn btn-success" @onclick="ShowCreateOrderForm">Create New Order</button>
+    }
 }
 
 @code {
     private List<Order>? orders;
     private string? loadErrorMessage;
-    // TODO: CreateOrderForm component
-    // TODO: PrepareOrderForm component (to change status and specify stock to pick from)
-    // TODO: ViewOrderDetails component
+
+    private bool showOrderForm = false;
+    private Order currentOrder = new();
+    private bool isEditMode = false;
+
+    private const string ApiUrl = "api/Orders";
 
     protected override async Task OnInitializedAsync()
     {
@@ -75,7 +86,7 @@ else if (orders != null)
         loadErrorMessage = null;
         try
         {
-            orders = await Http.GetFromJsonAsync<List<Order>>("api/Orders");
+            orders = await Http.GetFromJsonAsync<List<Order>>(ApiUrl);
         }
         catch (HttpRequestException httpEx)
         {
@@ -88,20 +99,54 @@ else if (orders != null)
             orders = new List<Order>();
             Console.WriteLine($"Error loading orders: {ex}");
         }
+        StateHasChanged();
     }
 
     private void ShowCreateOrderForm()
     {
-        // TODO: Adapt for new Order model
+        currentOrder = new Order 
+        {
+            Items = new List<OrderItem>(),
+            Date = DateTime.Now,
+            Status = "Pending"
+        };
+        isEditMode = false;
+        showOrderForm = true;
+    }
+
+    private void CancelOrderForm()
+    {
+        showOrderForm = false;
+        currentOrder = new();
+    }
+
+    private async Task HandleOrderSubmit(Order order)
+    {
+        if (!isEditMode)
+        {
+            order.Items ??= new List<OrderItem>();
+            var response = await Http.PostAsJsonAsync(ApiUrl, order);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadOrders();
+            }
+            else
+            {
+                loadErrorMessage = $"Error creating order: {await response.Content.ReadAsStringAsync()}";
+                Console.WriteLine($"Error creating order: {response.ReasonPhrase} - {await response.Content.ReadAsStringAsync()}");
+            }
+        }
+        showOrderForm = false;
+        StateHasChanged();
     }
 
     private void ViewOrder(Order orderToView)
     {
-        // TODO: Adapt for new Order model
+        Console.WriteLine($"Viewing order: {orderToView.OrderNumber}");
     }
 
     private void PrepareOrder(Order orderToPrepare)
     {
-        // TODO: Adapt for new Order model
+        Console.WriteLine($"Preparing order: {orderToPrepare.OrderNumber}");
     }
 } 
