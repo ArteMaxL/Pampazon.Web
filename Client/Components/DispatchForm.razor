@@ -1,0 +1,46 @@
+@using Pampazon.Web.Client.Models
+@using System.ComponentModel.DataAnnotations
+
+<EditForm Model="@DispatchModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="dispatchNumber" class="form-label">Dispatch Number</label>
+        <InputText id="dispatchNumber" class="form-control" @bind-Value="DispatchModel.DispatchNumber" />
+        <ValidationMessage For="() => DispatchModel.DispatchNumber" />
+    </div>
+
+    <div class="mb-3">
+        <label for="carrierCuit" class="form-label">Carrier CUIT</label>
+        <InputText id="carrierCuit" class="form-control" @bind-Value="DispatchModel.CarrierCUIT" />
+        <ValidationMessage For="() => DispatchModel.CarrierCUIT" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">@(IsEdit ? "Save Changes" : "Create Dispatch")</button>
+    <button type="button" class="btn btn-secondary" @onclick="OnCancel">Cancel</button>
+</EditForm>
+
+@code {
+    [Parameter] public Dispatch DispatchModel { get; set; } = new();
+    [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public EventCallback<Dispatch> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!IsEdit)
+        {
+            DispatchModel.Date = DateTime.Now;
+            DispatchModel.IsFinalized = false; 
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync(DispatchModel);
+        }
+    }
+} 

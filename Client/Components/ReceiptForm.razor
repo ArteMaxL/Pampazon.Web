@@ -1,0 +1,43 @@
+@using Pampazon.Web.Client.Models
+@using System.ComponentModel.DataAnnotations
+
+<EditForm Model="@ReceiptModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="clientId" class="form-label">Client ID (CUIT)</label>
+        <InputText id="clientId" class="form-control" @bind-Value="ReceiptModel.ClientId" />
+        <ValidationMessage For="() => ReceiptModel.ClientId" />
+    </div>
+
+    @* TODO: Add UI for managing ReceiptModel.Items *@
+    @* For example, a list of items with add/remove functionality *@
+
+    <button type="submit" class="btn btn-primary">@(IsEdit ? "Save Changes" : "Create Receipt")</button>
+    <button type="button" class="btn btn-secondary" @onclick="OnCancel">Cancel</button>
+</EditForm>
+
+@code {
+    [Parameter] public Receipt ReceiptModel { get; set; } = new();
+    [Parameter] public bool IsEdit { get; set; } // For future edit functionality
+    [Parameter] public EventCallback<Receipt> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!IsEdit)
+        {
+            ReceiptModel.Date = DateTime.Now; // Default date for new receipts
+            // ReceiptModel.Status = "PendingEntry"; // Or let backend set initial status
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync(ReceiptModel);
+        }
+    }
+} 

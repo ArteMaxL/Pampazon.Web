@@ -7,7 +7,7 @@
 
     <div class="mb-3">
         <label for="productCode" class="form-label">Product Code</label>
-        <InputText id="productCode" class="form-control" @bind-Value="ProductModel.Code" disabled="IsEdit" />
+        <InputText id="productCode" class="form-control" @bind-Value="ProductModel.Code" disabled="@IsEdit" />
         <ValidationMessage For="() => ProductModel.Code" />
     </div>
 
@@ -51,6 +51,10 @@
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
+        if (!IsEdit && ProductModel.Code == null)
+        {
+            ProductModel.Code = string.Empty;
+        }
     }
 
     private async Task HandleValidSubmit()

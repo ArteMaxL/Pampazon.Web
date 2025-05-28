@@ -6,7 +6,7 @@
 
     <div class="mb-3">
         <label for="cuit" class="form-label">CUIT</label>
-        <InputText id="cuit" class="form-control" @bind-Value="ClientModel.CUIT" disabled="IsEdit" />
+        <InputText id="cuit" class="form-control" @bind-Value="ClientModel.CUIT" disabled="@IsEdit" />
         <ValidationMessage For="() => ClientModel.CUIT" />
     </div>
 
@@ -27,6 +27,15 @@
     [Parameter] public bool IsEdit { get; set; }
     [Parameter] public EventCallback<Client> OnSubmit { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (!IsEdit && ClientModel.CUIT == null)
+        {
+            ClientModel.CUIT = string.Empty;
+        }
+    }
 
     private async Task HandleValidSubmit()
     {

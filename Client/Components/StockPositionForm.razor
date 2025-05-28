@@ -1,0 +1,78 @@
+@using Pampazon.Web.Client.Models
+@using System.ComponentModel.DataAnnotations
+
+<EditForm Model="@StockPositionModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="productId" class="form-label">Product ID (Code)</label>
+        <InputText id="productId" class="form-control" @bind-Value="StockPositionModel.ProductId" />
+        <ValidationMessage For="() => StockPositionModel.ProductId" />
+    </div>
+
+    <div class="mb-3">
+        <label for="clientId" class="form-label">Client ID (CUIT)</label>
+        <InputText id="clientId" class="form-control" @bind-Value="StockPositionModel.ClientId" />
+        <ValidationMessage For="() => StockPositionModel.ClientId" />
+    </div>
+
+    <div class="mb-3">
+        <label for="receiptNumber" class="form-label">Receipt Number</label>
+        <InputText id="receiptNumber" class="form-control" @bind-Value="StockPositionModel.ReceiptNumber" />
+        <ValidationMessage For="() => StockPositionModel.ReceiptNumber" />
+    </div>
+
+    <div class="mb-3">
+        <label for="quantity" class="form-label">Quantity</label>
+        <InputNumber TValue="int" id="quantity" class="form-control" @bind-Value="StockPositionModel.Quantity" />
+        <ValidationMessage For="() => StockPositionModel.Quantity" />
+    </div>
+
+    <fieldset class="mb-3">
+        <legend>Location</legend>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label for="aisle" class="form-label">Aisle</label>
+                <InputText id="aisle" class="form-control" @bind-Value="StockPositionModel.Aisle" />
+                <ValidationMessage For="() => StockPositionModel.Aisle" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="section" class="form-label">Section</label>
+                <InputText id="section" class="form-control" @bind-Value="StockPositionModel.Section" />
+                <ValidationMessage For="() => StockPositionModel.Section" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="shelf" class="form-label">Shelf</label>
+                <InputText id="shelf" class="form-control" @bind-Value="StockPositionModel.Shelf" />
+                <ValidationMessage For="() => StockPositionModel.Shelf" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="level" class="form-label">Level</label>
+                <InputText id="level" class="form-control" @bind-Value="StockPositionModel.Level" />
+                <ValidationMessage For="() => StockPositionModel.Level" />
+            </div>
+        </div>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary">@(IsEdit ? "Save Changes" : "Create Stock Position")</button>
+    <button type="button" class="btn btn-secondary" @onclick="OnCancel">Cancel</button>
+</EditForm>
+
+@code {
+    [Parameter] public StockPosition StockPositionModel { get; set; } = new();
+    [Parameter] public bool IsEdit { get; set; } // For future edit functionality
+    [Parameter] public EventCallback<StockPosition> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    // OnInitialized can be used to set defaults if needed for new entries, e.g., StockPositionModel.CreatedAt = DateTime.Now;
+    // However, CreatedAt is likely set by the server.
+
+    private async Task HandleValidSubmit()
+    {
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync(StockPositionModel);
+        }
+    }
+} 
