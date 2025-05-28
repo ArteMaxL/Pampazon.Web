@@ -1,0 +1,90 @@
+@page "/stock"
+@using Pampazon.Web.Client.Models
+@inject HttpClient Http
+
+<h3>Current Stock</h3>
+
+@if (!string.IsNullOrEmpty(loadErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        Error loading stock positions: @loadErrorMessage
+    </div>
+}
+
+@if (stockPositions == null && string.IsNullOrEmpty(loadErrorMessage))
+{
+    <p><em>Loading...</em></p>
+}
+else if (stockPositions != null && !stockPositions.Any()) // Check stockPositions
+{
+    <p><em>No stock positions found.</em></p>
+    @* Add button or info on how stock is created (e.g., via Receipts) *@
+}
+else if (stockPositions != null) // Check stockPositions
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Product Code</th>
+                <th>Product Desc.</th>
+                <th>Client ID</th>
+                <th>Quantity</th>
+                <th>Position (A.S.Sh.L)</th> @* Aisle, Section, Shelf, Level *@
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var stockItem in stockPositions) // Use stockPositions
+            {
+                <tr>
+                    <td>@stockItem.Id</td>
+                    <td>@stockItem.ProductCode</td>
+                    <td>@(stockItem.Product?.Description ?? "N/A")</td>
+                    <td>@stockItem.ClientId</td>
+                    <td>@stockItem.Quantity</td>
+                    <td>@stockItem.GetPositionCode()</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" @onclick="() => ViewStockPositionDetails(stockItem)">View</button>
+                        @* TODO: Adjust/Move stock if needed, or other actions *@
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @* TODO: Button to manually adjust stock, if applicable, or filter/search *@
+}
+
+@code {
+    private List<Pampazon.Web.Client.Models.StockPosition>? stockPositions; // Fully qualify or ensure using statement is correct
+    private string? loadErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loadErrorMessage = null;
+        try
+        {
+            stockPositions = await Http.GetFromJsonAsync<List<Pampazon.Web.Client.Models.StockPosition>>("api/stock"); // Changed endpoint
+        }
+        catch (HttpRequestException httpEx)
+        {
+            loadErrorMessage = $"HTTP Error: {httpEx.Message} (Status: {httpEx.StatusCode})";
+            stockPositions = new List<Pampazon.Web.Client.Models.StockPosition>();
+        }
+        catch (Exception ex)
+        {
+            loadErrorMessage = $"An error occurred: {ex.Message}";
+            stockPositions = new List<Pampazon.Web.Client.Models.StockPosition>();
+            Console.WriteLine($"Error loading stock positions: {ex}");
+        }
+    }
+
+    private void ViewStockPositionDetails(Pampazon.Web.Client.Models.StockPosition stockPosition)
+    {
+        // TODO: Logic to show details of the stock position
+    }
+
+    // Removed EditStockItem and DeleteStockItem as they were based on the old incorrect model.
+    // CRUD for StockPositions is likely handled via Receipts (creation) and Orders (depletion).
+    // Manual adjustments might need new forms/methods.
+} 

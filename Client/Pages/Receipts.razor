@@ -1,0 +1,102 @@
+@page "/receipts" // Renamed route
+@using Pampazon.Web.Client.Models
+@inject HttpClient Http
+
+<h3>Incoming Receipts</h3> @* Updated title *@
+
+@if (!string.IsNullOrEmpty(loadErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        Error loading receipts: @loadErrorMessage
+    </div>
+}
+
+@if (receipts == null && string.IsNullOrEmpty(loadErrorMessage))
+{
+    <p><em>Loading...</em></p>
+}
+else if (receipts != null && !receipts.Any()) // Ensure receipts is not null
+{
+    <p><em>No incoming receipts found. You can create a new one.</em></p>
+    <button class="btn btn-success mt-3" @onclick="ShowCreateReceiptForm">Create New Receipt</button>
+}
+else if (receipts != null) // Ensure receipts is not null
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Receipt ID</th> @* Was Receipt #, now Id from model *@
+                <th>Date</th>
+                <th>Client CUIT</th> @* Was Client ID, now ClientCUIT from model *@
+                <th>Carrier CUIT</th> @* Added column *@
+                <th>Status</th>
+                <th>Items</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var receiptItem in receipts)
+            {
+                <tr>
+                    <td>@receiptItem.Id</td> @* Was ReceiptNumber *@
+                    <td>@receiptItem.Date.ToShortDateString()</td>
+                    <td>@receiptItem.ClientCUIT</td> @* Was ClientId *@
+                    <td>@receiptItem.CarrierCUIT</td> @* Added field *@
+                    <td>@receiptItem.Status</td>
+                    <td>@receiptItem.Items?.Count</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" @onclick="() => ViewReceipt(receiptItem)">View</button>
+                        @if (receiptItem.Status == "PendingEntry" || receiptItem.Status == "InProgress") // Comparing with string status
+                        {
+                            <button class="btn btn-sm btn-warning" @onclick="() => ProcessReceipt(receiptItem)">Process</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-success" @onclick="ShowCreateReceiptForm">Create New Receipt</button>
+}
+
+@code {
+    private List<Receipt>? receipts; // Changed from Remito to Receipt
+    private string? loadErrorMessage;
+    // TODO: CreateReceiptForm component
+    // TODO: ProcessReceiptForm component
+    // TODO: ViewReceiptDetails component
+
+    protected override async Task OnInitializedAsync()
+    {
+        loadErrorMessage = null;
+        try
+        {
+            receipts = await Http.GetFromJsonAsync<List<Receipt>>("api/Receipts"); // API endpoint api/Receipts
+        }
+        catch (HttpRequestException httpEx)
+        {
+            loadErrorMessage = $"HTTP Error: {httpEx.Message} (Status: {httpEx.StatusCode})";
+            receipts = new List<Receipt>();
+        }
+        catch (Exception ex)
+        {
+            loadErrorMessage = $"An error occurred: {ex.Message}";
+            receipts = new List<Receipt>();
+            Console.WriteLine($"Error loading receipts: {ex}");
+        }
+    }
+
+    private void ShowCreateReceiptForm() // Renamed
+    {
+        // TODO: Logic to show create form
+    }
+
+    private void ViewReceipt(Receipt receiptToView) // Renamed parameter and type
+    {
+        // TODO: Logic to show receipt details
+    }
+
+    private void ProcessReceipt(Receipt receiptToProcess) // Renamed parameter and type
+    {
+        // TODO: Logic to show form for processing
+    }
+} 

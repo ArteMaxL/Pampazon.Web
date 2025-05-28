@@ -1,0 +1,126 @@
+@page "/dispatches" // Renamed route
+@using Pampazon.Web.Client.Models
+@inject HttpClient Http
+
+<h3>Dispatches</h3> @* Updated title slightly *@
+
+@if (!string.IsNullOrEmpty(loadErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        Error loading dispatches: @loadErrorMessage
+    </div>
+}
+
+@if (dispatches == null && string.IsNullOrEmpty(loadErrorMessage))
+{
+    <p><em>Loading...</em></p>
+}
+else if (dispatches != null && !dispatches.Any()) // Ensure dispatches is not null here
+{
+    <p><em>No dispatches found. You can create a new dispatch.</em></p>
+    <button class="btn btn-success mt-3" @onclick="ShowCreateDispatchForm">Create New Dispatch</button>
+}
+else if (dispatches != null) // Ensure dispatches is not null before iterating
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Dispatch #</th>
+                @*<th>Order #</th>*@ @* Removed, not in base Dispatch model from backend *@
+                <th>Carrier CUIT</th>
+                <th>Finalized</th> @* Was Status, now based on IsFinalized *@
+                <th>Date</th> @* Was Created At *@
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var dispatchItem in dispatches)
+            {
+                <tr>
+                    <td>@dispatchItem.DispatchNumber</td>
+                    @*<td>@dispatchItem.OrderNumber</td>*@ @* Removed *@
+                    <td>@dispatchItem.CarrierCUIT</td>
+                    <td>@(dispatchItem.IsFinalized ? "Yes" : "No")</td> @* Display based on IsFinalized *@
+                    <td>@dispatchItem.Date.ToShortDateString()</td> @* Changed from CreatedAt *@
+                    <td>
+                        <button class="btn btn-sm btn-info" @onclick="() => ViewDispatch(dispatchItem)">View</button>
+                        @if (!dispatchItem.IsFinalized)
+                        {
+                            <button class="btn btn-sm btn-primary" @onclick="() => ShowAddOrderToDispatchForm(dispatchItem)">Add Order</button> @* Renamed method, will need a form *@
+                            <button class="btn btn-sm btn-success" @onclick="() => ConfirmFinalizeDispatch(dispatchItem)">Finalize</button> @* Renamed method *@
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-success" @onclick="ShowCreateDispatchForm">Create New Dispatch</button>
+}
+
+@code {
+    private List<Dispatch>? dispatches; // Changed from Despacho to Dispatch
+    private string? loadErrorMessage;
+    // TODO: CreateDispatchForm component
+    // TODO: AddOrderToDispatchForm component
+    // TODO: ViewDispatchDetails component
+
+    private void ShowCreateDispatchForm() // Renamed
+    {
+        // TODO: Logic to show create form
+    }
+
+    private void ViewDispatch(Dispatch dispatchToView) // Renamed parameter and type
+    {
+        // TODO: Logic to show dispatch details
+    }
+
+    private void ShowAddOrderToDispatchForm(Dispatch dispatchItem)
+    {
+        // TODO: Logic to show a form to get an OrderNumber
+        // Then call: await Http.PostAsync($"api/dispatches/{dispatchItem.DispatchNumber}/orders/{orderNumberToAdd}", null);
+        Console.WriteLine($"ShowAddOrderToDispatchForm for {dispatchItem.DispatchNumber}. API call not yet implemented.");
+    }
+
+    private async Task ConfirmFinalizeDispatch(Dispatch dispatchItem) // Renamed parameter and type
+    {
+        // TODO: Add confirmation dialog if desired
+        var response = await Http.PostAsync($"api/dispatches/{dispatchItem.DispatchNumber}/finalize", null);
+        if (response.IsSuccessStatusCode)
+        {
+            // dispatchItem.IsFinalized = true; // Optimistic update or reload
+            await LoadDispatches(); // Reload to see updated status
+            StateHasChanged();
+        }
+        else
+        {
+            loadErrorMessage = $"Error finalizing dispatch {dispatchItem.DispatchNumber}: {response.ReasonPhrase}";
+            Console.WriteLine(loadErrorMessage);
+        }
+    }
+
+    // Add LoadDispatches method for reusability
+    private async Task LoadDispatches()
+    {
+        loadErrorMessage = null;
+        try
+        {
+            dispatches = await Http.GetFromJsonAsync<List<Dispatch>>("api/Dispatches");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            loadErrorMessage = $"HTTP Error: {httpEx.Message} (Status: {httpEx.StatusCode})";
+            dispatches = new List<Dispatch>();
+        }
+        catch (Exception ex)
+        {
+            loadErrorMessage = $"An error occurred: {ex.Message}";
+            dispatches = new List<Dispatch>();
+            Console.WriteLine($"Error loading dispatches: {ex}");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDispatches();
+    }
+} 

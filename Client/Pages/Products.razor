@@ -1,0 +1,155 @@
+@page "/products"
+@using Pampazon.Web.Client.Models
+@using Pampazon.Web.Client.Components
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Products</h3>
+
+@if (!string.IsNullOrEmpty(loadErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        Error loading products: @loadErrorMessage
+    </div>
+}
+
+@if (showProductForm)
+{
+    <ProductForm ProductModel="currentProduct" IsEdit="isEditMode" OnSubmit="HandleProductSubmit" OnCancel="CancelProductForm" />
+}
+else
+{
+    @if (products == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (!products.Any())
+    {
+        <p><em>No products found. You can add a new product.</em></p>
+        <button class="btn btn-success mt-3" @onclick="ShowAddProductForm">Add New Product</button>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>Dimensions (H x W x D cm)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var product in products)
+                {
+                    <tr>
+                        <td>@product.Code</td>
+                        <td>@product.Description</td>
+                        <td>@product.Height cm x @product.Width cm x @product.Depth cm</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" @onclick="() => ShowEditProductForm(product)">Edit</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDeleteProduct(product.Code)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <button class="btn btn-success" @onclick="ShowAddProductForm">Add New Product</button>
+    }
+}
+
+@code {
+    private List<Product>? products;
+    private Product currentProduct = new();
+    private bool showProductForm = false;
+    private bool isEditMode = false;
+    private string? loadErrorMessage;
+
+    private const string ApiUrl = "api/Products";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        loadErrorMessage = null; // Clear previous error
+        try
+        {
+            products = await Http.GetFromJsonAsync<List<Product>>(ApiUrl);
+        }
+        catch (HttpRequestException httpEx)
+        {
+            loadErrorMessage = $"HTTP Error: {httpEx.Message} (Status: {httpEx.StatusCode})";
+            products = new List<Product>(); // Ensure products is not null for UI checks
+        }
+        catch (Exception ex)
+        {
+            loadErrorMessage = $"An error occurred: {ex.Message}";
+            products = new List<Product>(); // Ensure products is not null for UI checks
+            Console.WriteLine($"Error loading products: {ex}"); // Log full exception to console
+        }
+        StateHasChanged(); // Ensure UI updates with error or data
+    }
+
+    private void ShowAddProductForm()
+    {
+        currentProduct = new Product();
+        isEditMode = false;
+        showProductForm = true;
+    }
+
+    private void ShowEditProductForm(Product productToEdit)
+    {
+        currentProduct = productToEdit;
+        isEditMode = true;
+        showProductForm = true;
+    }
+
+    private void CancelProductForm()
+    {
+        showProductForm = false;
+        currentProduct = new();
+    }
+
+    private async Task HandleProductSubmit(Product product)
+    {
+        if (isEditMode)
+        {
+            var response = await Http.PutAsJsonAsync($"{ApiUrl}/{product.Code}", product);
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"Error updating product: {response.ReasonPhrase}");
+                return;
+            }
+        }
+        else
+        {
+            var response = await Http.PostAsJsonAsync(ApiUrl, product);
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"Error creating product: {response.ReasonPhrase}");
+                return;
+            }
+        }
+        await LoadProducts();
+        showProductForm = false;
+    }
+
+    private async Task ConfirmDeleteProduct(string? productCode)
+    {
+        if (productCode == null) return;
+        var response = await Http.DeleteAsync($"{ApiUrl}/{productCode}");
+        if (response.IsSuccessStatusCode)
+        {
+            products?.RemoveAll(p => p.Code == productCode);
+        }
+        else
+        {
+            Console.WriteLine($"Error deleting product: {response.ReasonPhrase}");
+        }
+        await LoadProducts();
+        StateHasChanged();
+    }
+} 

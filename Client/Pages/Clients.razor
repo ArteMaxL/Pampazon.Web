@@ -1,0 +1,151 @@
+@page "/clients"
+@using Pampazon.Web.Client.Models
+@using Pampazon.Web.Client.Components
+@inject HttpClient Http
+
+<h3>Clients</h3>
+
+@if (!string.IsNullOrEmpty(loadErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        Error loading clients: @loadErrorMessage
+    </div>
+}
+
+@if (showClientForm)
+{
+    <ClientForm ClientModel="currentClient" IsEdit="isEditMode" OnSubmit="HandleClientSubmit" OnCancel="CancelClientForm" />
+}
+else
+{
+    @if (clients == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (!clients.Any())
+    {
+        <p><em>No clients found. You can add a new client.</em></p>
+        <button class="btn btn-success mt-3" @onclick="ShowAddClientForm">Add New Client</button>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>CUIT</th>
+                    <th>Business Name</th>
+                    @*<th>Rented Positions</th>*@
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var client in clients)
+                {
+                    <tr>
+                        <td>@client.CUIT</td>
+                        <td>@client.BusinessName</td>
+                        @*<td>@(client.RentedPositions != null && client.RentedPositions.Any() ? string.Join(", ", client.RentedPositions.Select(p => p.GetPositionCode())) : "None")</td>*@
+                        <td>
+                            <button class="btn btn-sm btn-primary" @onclick="() => ShowEditClientForm(client)">Edit</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDeleteClient(client.CUIT)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <button class="btn btn-success" @onclick="ShowAddClientForm">Add New Client</button>
+    }
+}
+
+@code {
+    private List<Client>? clients;
+    private Client currentClient = new();
+    private bool showClientForm = false;
+    private bool isEditMode = false;
+    private string? loadErrorMessage;
+    private const string ApiUrl = "api/clients";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClients();
+    }
+
+    private async Task LoadClients()
+    {
+        loadErrorMessage = null;
+        try
+        {
+            clients = await Http.GetFromJsonAsync<List<Client>>(ApiUrl);
+        }
+        catch (HttpRequestException httpEx)
+        {
+            loadErrorMessage = $"HTTP Error: {httpEx.Message} (Status: {httpEx.StatusCode})";
+            clients = new List<Client>();
+        }
+        catch (Exception ex)
+        {
+            loadErrorMessage = $"An error occurred: {ex.Message}";
+            clients = new List<Client>();
+            Console.WriteLine($"Error loading clients: {ex}");
+        }
+        StateHasChanged();
+    }
+
+    private void ShowAddClientForm()
+    {
+        currentClient = new Client();
+        isEditMode = false;
+        showClientForm = true;
+    }
+
+    private void ShowEditClientForm(Client clientToEdit)
+    {
+        currentClient = clientToEdit;
+        isEditMode = true;
+        showClientForm = true;
+    }
+
+    private void CancelClientForm()
+    {
+        showClientForm = false;
+        currentClient = new();
+    }
+
+    private async Task HandleClientSubmit(Client client)
+    {
+        HttpResponseMessage response;
+        if (isEditMode)
+        {
+            response = await Http.PutAsJsonAsync($"{ApiUrl}/{client.CUIT}", client);
+        }
+        else
+        {
+            response = await Http.PostAsJsonAsync(ApiUrl, client);
+        }
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadClients();
+            showClientForm = false;
+        }
+        else
+        {
+            Console.WriteLine($"Error saving client: {response.ReasonPhrase}");
+        }
+    }
+
+    private async Task ConfirmDeleteClient(string? cuit)
+    {
+        if (string.IsNullOrEmpty(cuit)) return;
+        var response = await Http.DeleteAsync($"{ApiUrl}/{cuit}");
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadClients();
+        }
+        else
+        {
+            Console.WriteLine($"Error deleting client: {response.ReasonPhrase}");
+        }
+        StateHasChanged();
+    }
+} 

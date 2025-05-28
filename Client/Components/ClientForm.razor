@@ -1,0 +1,38 @@
+@using Pampazon.Web.Client.Models
+
+<EditForm Model="@ClientModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="cuit" class="form-label">CUIT</label>
+        <InputText id="cuit" class="form-control" @bind-Value="ClientModel.CUIT" disabled="IsEdit" />
+        <ValidationMessage For="() => ClientModel.CUIT" />
+    </div>
+
+    <div class="mb-3">
+        <label for="businessName" class="form-label">Business Name</label>
+        <InputText id="businessName" class="form-control" @bind-Value="ClientModel.BusinessName" />
+        <ValidationMessage For="() => ClientModel.BusinessName" />
+    </div>
+
+    @* TODO: Manage RentedPositions. *@
+
+    <button type="submit" class="btn btn-primary">@(IsEdit ? "Save Changes" : "Create Client")</button>
+    <button type="button" class="btn btn-secondary" @onclick="OnCancel">Cancel</button>
+</EditForm>
+
+@code {
+    [Parameter] public Client ClientModel { get; set; } = new();
+    [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public EventCallback<Client> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync(ClientModel);
+        }
+    }
+} 
