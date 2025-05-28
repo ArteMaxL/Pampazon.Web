@@ -1,8 +1,8 @@
 @page "/stock"
 @using Pampazon.Web.Client.Models
-@using Pampazon.Web.Client.Components // Added for form
+@using Pampazon.Web.Client.Components // Agregado para el formulario
 @inject HttpClient Http
-@inject NavigationManager NavigationManager // For potential navigation after actions
+@inject NavigationManager NavigationManager // Para navegación potencial después de acciones
 
 <h3>Current Stock</h3>
 
@@ -33,13 +33,13 @@ else
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Product ID</th> @* Changed from Product Code *@
+                    <th>Product ID</th>
                     <th>Product Desc.</th>
                     <th>Client ID</th>
-                    <th>Receipt #</th> @* Added ReceiptNumber column *@
+                    <th>Receipt #</th>
                     <th>Qty</th>
                     <th>Position</th>
-                    <th>Created At</th> @* Added CreatedAt column *@
+                    <th>Created At</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -48,15 +48,14 @@ else
                 {
                     <tr>
                         <td>@stockItem.Id</td>
-                        <td>@stockItem.ProductId</td> @* Changed from ProductCode *@
+                        <td>@stockItem.ProductId</td>
                         <td>@(stockItem.Product?.Description ?? "N/A")</td>
                         <td>@stockItem.ClientId</td>
-                        <td>@stockItem.ReceiptNumber</td> @* Added ReceiptNumber data *@
+                        <td>@stockItem.ReceiptNumber</td>
                         <td>@stockItem.Quantity</td>
                         <td>@stockItem.GetPositionCode()</td>
-                        <td>@stockItem.CreatedAt.ToShortDateString()</td> @* Added CreatedAt data *@
+                        <td>@stockItem.CreatedAt.ToShortDateString()</td>
                         <td>
-                            @* View details could be a modal or separate page later *
                             @* <button class="btn btn-sm btn-info" @onclick="() => ViewStockPositionDetails(stockItem)">View</button> *@
                             <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDeleteStockPosition(stockItem.Id)">Delete</button>
                         </td>
@@ -75,9 +74,9 @@ else
     // For form handling
     private bool showStockPositionForm = false;
     private StockPosition currentStockPosition = new();
-    private bool isEditMode = false; // Not used for now, but good for future
+    private bool isEditMode = false;
 
-    private const string ApiBaseUrl = "api/Stock"; // Changed from "api/stock"
+    private const string ApiBaseUrl = "api/Stock"; // "api/stock"
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,8 +106,8 @@ else
 
     private void ShowCreateStockPositionForm()
     {
-        currentStockPosition = new StockPosition(); // Initialize a new model for the form
-        // CreatedAt will be set by backend or in form's OnInitialized if needed by frontend before send
+        currentStockPosition = new StockPosition();
+        // CreatedAt será establecido por el backend o en OnInitialized del formulario si es necesario antes de enviar
         isEditMode = false;
         showStockPositionForm = true;
     }
@@ -121,13 +120,12 @@ else
 
     private async Task HandleStockPositionSubmit(StockPosition stockPositionToSubmit)
     {
-        // For now, only create is implemented here. Edit would use PUT.
         if (!isEditMode)
         {
             var response = await Http.PostAsJsonAsync(ApiBaseUrl, stockPositionToSubmit);
             if (response.IsSuccessStatusCode)
             {
-                await LoadStockPositions(); // Refresh list
+                await LoadStockPositions();
             }
             else
             {
@@ -141,7 +139,6 @@ else
 
     private async Task ConfirmDeleteStockPosition(int stockPositionId)
     {
-        // Consider adding a JS confirm dialog here for better UX
         // if (await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this stock position?"))
         // {
         try
@@ -149,27 +146,25 @@ else
             var response = await Http.DeleteAsync($"{ApiBaseUrl}/{stockPositionId}");
             if (response.IsSuccessStatusCode)
             {
-                await LoadStockPositions(); // Refresh the list
+                await LoadStockPositions();
             }
             else
             {
                 loadErrorMessage = $"Error deleting stock position {stockPositionId}: {await response.Content.ReadAsStringAsync()}";
                 Console.WriteLine(loadErrorMessage);
-                StateHasChanged(); // Update UI with error message
+                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
             loadErrorMessage = $"Exception deleting stock position {stockPositionId}: {ex.Message}";
             Console.WriteLine(loadErrorMessage);
-            StateHasChanged(); // Update UI with error message
+            StateHasChanged();
         }
-        // }
     }
 
     // private void ViewStockPositionDetails(StockPosition stockPosition)
     // {
-    //     // TODO: Logic to show details of the stock position
     //     Console.WriteLine($"Viewing stock position ID: {stockPosition.Id}");
     // }
 } 

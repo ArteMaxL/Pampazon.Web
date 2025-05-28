@@ -74,7 +74,7 @@ else
 
     private async Task LoadProducts()
     {
-        loadErrorMessage = null; // Clear previous error
+        loadErrorMessage = null;
         try
         {
             products = await Http.GetFromJsonAsync<List<Product>>(ApiUrl);
@@ -82,15 +82,15 @@ else
         catch (HttpRequestException httpEx)
         {
             loadErrorMessage = $"HTTP Error: {httpEx.Message} (Status: {httpEx.StatusCode})";
-            products = new List<Product>(); // Ensure products is not null for UI checks
+            products = new List<Product>();
         }
         catch (Exception ex)
         {
             loadErrorMessage = $"An error occurred: {ex.Message}";
-            products = new List<Product>(); // Ensure products is not null for UI checks
-            Console.WriteLine($"Error loading products: {ex}"); // Log full exception to console
+            products = new List<Product>();
+            Console.WriteLine($"Error loading products: {ex}");
         }
-        StateHasChanged(); // Ensure UI updates with error or data
+        StateHasChanged();
     }
 
     private void ShowAddProductForm()

@@ -1,9 +1,9 @@
 @page "/receipts" // Renamed route
 @using Pampazon.Web.Client.Models
-@using Pampazon.Web.Client.Components // Added
+@using Pampazon.Web.Client.Components
 @inject HttpClient Http
 
-<h3>Incoming Receipts</h3> @* Updated title *@
+<h3>Incoming Receipts</h3>
 
 @if (!string.IsNullOrEmpty(loadErrorMessage))
 {
@@ -12,7 +12,7 @@
     </div>
 }
 
-@if (showReceiptForm) // Added
+@if (showReceiptForm)
 {
     <ReceiptForm ReceiptModel="currentReceipt" IsEdit="isEditMode" OnSubmit="HandleReceiptSubmit" OnCancel="CancelReceiptForm" />
 }
@@ -22,20 +22,20 @@ else
     {
         <p><em>Loading...</em></p>
     }
-    else if (receipts != null && !receipts.Any()) // Ensure receipts is not null
+    else if (receipts != null && !receipts.Any())
     {
         <p><em>No incoming receipts found. You can create a new one.</em></p>
         <button class="btn btn-success mt-3" @onclick="ShowCreateReceiptForm">Create New Receipt</button>
     }
-    else if (receipts != null) // Ensure receipts is not null
+    else if (receipts != null)
     {
         <table class="table">
             <thead>
                 <tr>
-                    <th>Receipt #</th>      @* Was Receipt ID, now ReceiptNumber from model *@
+                    <th>Receipt #</th>
                     <th>Date</th>
-                    <th>Client ID</th>      @* Was Client CUIT, now ClientId from model *@
-                    <th>Status (Code)</th>  @* Status is now int *@
+                    <th>Client ID</th>
+                    <th>Status (Code)</th>
                     <th>Items</th>
                     <th>Actions</th>
                 </tr>
@@ -44,14 +44,14 @@ else
                 @foreach (var receiptItem in receipts)
                 {
                     <tr>
-                        <td>@receiptItem.ReceiptNumber</td> @* Was Id *@
+                        <td>@receiptItem.ReceiptNumber</td>
                         <td>@receiptItem.Date.ToShortDateString()</td>
-                        <td>@receiptItem.ClientId</td>      @* Was ClientCUIT *@
-                        <td>@receiptItem.Status</td>        @* Now string again *@
+                        <td>@receiptItem.ClientId</td>
+                        <td>@receiptItem.Status</td>
                         <td>@receiptItem.Items?.Count</td>
                         <td>
                             <button class="btn btn-sm btn-info" @onclick="() => ViewReceipt(receiptItem)">View</button>
-                            @if (receiptItem.Status == "PendingEntry" || receiptItem.Status == "InProgress") // String comparison
+                            @if (receiptItem.Status == "PendingEntry" || receiptItem.Status == "InProgress") // Comparo string, podría mejorar
                             {
                                 <button class="btn btn-sm btn-warning" @onclick="() => ProcessReceipt(receiptItem)">Process</button>
                             }
@@ -65,13 +65,13 @@ else
 }
 
 @code {
-    private List<Receipt>? receipts; // Changed from Remito to Receipt
+    private List<Receipt>? receipts;
     private string? loadErrorMessage;
     
     // Added for form handling
     private bool showReceiptForm = false;
     private Receipt currentReceipt = new();
-    private bool isEditMode = false; // For now, only create mode is implemented
+    private bool isEditMode = false;
 
     private const string ApiUrl = "api/Receipts";
 
@@ -80,7 +80,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadReceipts(); // Renamed for clarity
+        await LoadReceipts();
     }
 
     private async Task LoadReceipts()
@@ -101,7 +101,7 @@ else
             receipts = new List<Receipt>();
             Console.WriteLine($"Error loading receipts: {ex}");
         }
-        StateHasChanged(); // Ensure UI updates
+        StateHasChanged();
     }
 
     private void ShowCreateReceiptForm()
@@ -110,7 +110,7 @@ else
         {
             Items = new List<ReceiptItem>(),
             Date = DateTime.Now,
-            Status = "PendingEntry" // Use string value
+            Status = "PendingEntry"
         };
         isEditMode = false;
         showReceiptForm = true;
@@ -124,10 +124,8 @@ else
 
     private async Task HandleReceiptSubmit(Receipt receipt)
     {
-        // For now, only handling create. Edit would be an Http.PutAsJsonAsync
         if (!isEditMode)
         {
-            // Ensure Items is not null if backend expects it, even if empty
             receipt.Items ??= new List<ReceiptItem>();
             
             var response = await Http.PostAsJsonAsync(ApiUrl, receipt);
@@ -147,13 +145,13 @@ else
 
     private void ViewReceipt(Receipt receiptToView)
     {
-        // TODO: Logic to show receipt details
+        // TODO: Mostrar detalles de recibos
         Console.WriteLine($"Viewing receipt: {receiptToView.ReceiptNumber}");
     }
 
     private void ProcessReceipt(Receipt receiptToProcess)
     {
-        // TODO: Logic to show form for processing
+        // TODO: Mostrar formulario de procesamiento de recibos
         Console.WriteLine($"Processing receipt: {receiptToProcess.ReceiptNumber}");
     }
 } 
